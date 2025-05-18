@@ -23,8 +23,8 @@ public class User {
         return email;
     }
 
-    public Booking bookTicket(Show show, int noOfSeats, SeatType seatType) {
-        return MovieBookingSystem.getInstance().addBooking(show, this, noOfSeats, seatType);
+    public Booking bookTicket(Show show, int noOfSeats, SeatType seatType, Theatre theatre) {
+        return MovieBookingSystem.getInstance().addBooking(theatre, show, this, noOfSeats, seatType);
     }
 
     public void cancelTicket(Booking booking) {
