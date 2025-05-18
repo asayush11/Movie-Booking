@@ -1,5 +1,7 @@
 package src;
 
+import java.time.LocalDateTime;
+
 public class Demo {
     public static void main(String[] args) {
         MovieBookingSystem movieBookingSystem = MovieBookingSystem.getInstance();
@@ -15,10 +17,10 @@ public class Demo {
         Movie movie4 = new Movie( "Forrest Gump", "Drama", "English");
 
         // Add shows
-        Show show1 = theatre1.addShow(movie1, "10:00 AM");
-        Show show2 = theatre1.addShow(movie2, "1:00 PM");
-        Show show3 = theatre2.addShow(movie3, "4:00 PM");
-        Show show4 = theatre2.addShow(movie4, "7:00 PM");
+        Show show1 = theatre1.addShow(movie1, LocalDateTime.now().plusDays(5));
+        Show show2 = theatre1.addShow(movie2, LocalDateTime.now().plusDays(2));
+        Show show3 = theatre2.addShow(movie3, LocalDateTime.now().plusDays(10));
+        Show show4 = theatre2.addShow(movie4, LocalDateTime.now().plusDays(15));
 
         // Add users
         User user1 = movieBookingSystem.addUser("Alice", "alice.gmail");
@@ -27,12 +29,13 @@ public class Demo {
         User user4 = movieBookingSystem.addUser("David", "david.gmail");
 
         // Book tickets
-        Booking booking1 = user1.bookTicket(show1, 2, SeatType.NORMAL);
-        Booking booking2 = user2.bookTicket(show2, 3, SeatType.VIP);
-        Booking booking3 = user3.bookTicket(show3, 4, SeatType.PREMIUM);
-        Booking booking4 = user4.bookTicket(show4, 5, SeatType.NORMAL);
-        Booking booking5 = user1.bookTicket(show1, 4, SeatType.NORMAL);
-        Booking booking6 = user3.bookTicket(show3, 3, SeatType.VIP);
+        Booking booking1 = user1.bookTicket(show1, 2, SeatType.NORMAL, theatre1);
+        Booking booking2 = user2.bookTicket(show2, 3, SeatType.VIP, theatre1);
+        Booking booking3 = user3.bookTicket(show3, 4, SeatType.PREMIUM, theatre2);
+        Booking booking4 = user4.bookTicket(show4, 5, SeatType.NORMAL, theatre2);
+        Booking booking5 = user1.bookTicket(show1, 4, SeatType.NORMAL, theatre1);
+        Booking booking6 = user3.bookTicket(show3, 3, SeatType.VIP, theatre2);
+        Booking booking7 = user3.bookTicket(show3, 3, SeatType.VIP, theatre1);
 
         // Cancel booking
         user1.cancelTicket(booking6);

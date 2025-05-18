@@ -1,8 +1,10 @@
 package src;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Theatre {
     private final String name;
@@ -23,7 +25,7 @@ public class Theatre {
         return id;
     }
 
-    public Show addShow(Movie movie, String time) {
+    public Show addShow(Movie movie, LocalDateTime time) {
         String showId = "SH" + id + UUID.randomUUID().toString().substring(0,6);
         List<Seat> seats = new ArrayList<>();
 
@@ -39,7 +41,7 @@ public class Theatre {
                 default: seats.add(new Seat(SeatType.PREMIUM, i, 150.0));
             }
         }
-        Show show = new Show(showId, movie, time, seats, this);
+        Show show = new Show(showId, movie, time, seats);
         shows.add(show);
         System.out.println("Show added successfully");
         return show;
@@ -55,34 +57,28 @@ public class Theatre {
     }
 
     public void cancelTickets(String showId, int noOfSeats, SeatType seatType) {
-        Show show = shows.stream()
+        shows.stream()
                         .filter(s -> s.getId().equals(showId))
                         .findFirst()
-                        .orElse(null);
-        if(show == null) {
-            System.out.println("Show not found");
-            return;
-        }
-        show.cancelTicket(noOfSeats, seatType);
+                        .ifPresentOrElse(s -> s.cancelTicket(noOfSeats, seatType),
+                                         () -> System.out.println("Show not found"));
     }
 
     public boolean bookTickets(String showId, int noOfSeats, SeatType seatType) {
-        Show show = shows.stream()
+        AtomicBoolean ticketBooked = new AtomicBoolean(false);
+        shows.stream()
                         .filter(s -> s.getId().equals(showId))
                         .findFirst()
-                        .orElse(null);
-        if(show == null) {
-            System.out.println("Show not found");
-            return false;
-        }
-        return show.bookTicket(noOfSeats, seatType);
+                        .ifPresentOrElse(s -> ticketBooked.set(s.bookTicket(noOfSeats, seatType)),
+                        () -> System.out.println("Show not found"));
+        return ticketBooked.get();
     }
 
     public void displayShows() {
         shows.forEach(show -> {
             System.out.println("Show ID: " + show.getId());
             System.out.print("  Movie: " + show.getMovie().getName());
-            System.out.print("  Time: " + show.getTime());
+            System.out.println("  Time: " + show.getTime());
         });
     }
 

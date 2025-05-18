@@ -1,24 +1,26 @@
 package src;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class MovieBookingSystem {
-    private static MovieBookingSystem bookingSystem;
-    private final List<Theatre> theatres;
+    private static volatile MovieBookingSystem bookingSystem;
+    private final Map<String,Theatre> theatres;
     private final List<User> users;
     private final List<Booking> bookings;
 
     private MovieBookingSystem() {
-        this.theatres = new ArrayList<>();
+        this.theatres = new HashMap<>();
         this.users = new ArrayList<>();
         this.bookings = new ArrayList<>();
     }
 
     public synchronized static MovieBookingSystem getInstance() {
         if(bookingSystem == null) {
-            bookingSystem = new MovieBookingSystem();
+            synchronized (MovieBookingSystem.class){
+                if(bookingSystem == null){
+                    bookingSystem = new MovieBookingSystem();
+                }
+            }
         }
         return bookingSystem;
     }
@@ -26,13 +28,16 @@ public class MovieBookingSystem {
     public Theatre addTheatre(String name) {
         String id = "TH" + UUID.randomUUID().toString().substring(0,6);
         Theatre theatre = new Theatre(name, id);
-        theatres.add(theatre);
+        theatres.put(id,theatre);
         System.out.println("Theatre added successfully");
         return theatre;
     }
 
     public void removeTheatre(String theatreId) {
-        theatres.removeIf(theatre -> theatre.getId().equals(theatreId));
+        theatres.remove(theatreId);
+        bookings.stream()
+                .filter(booking -> booking.getTheatre().getId().equals(theatreId))
+                .forEach(booking -> booking.setStatus(BookingStatus.CANCELLED));
         System.out.println("Theatre removed successfully");
     }
 
@@ -46,36 +51,44 @@ public class MovieBookingSystem {
 
     public void removeUser(String userId) {
         users.removeIf(user -> user.getId().equals(userId));
+        bookings.stream()
+                .filter(booking -> booking.getUser().getId().equals(userId))
+                .forEach(booking -> booking.setStatus(BookingStatus.CANCELLED));
         System.out.println("User removed successfully");
     }
 
-    public Booking addBooking(Show show, User user, int seats, SeatType seatType) {
-        boolean reserved = show.getTheatre().bookTickets(show.getId(), seats, seatType);
-        if(!reserved) {
-            System.out.println("Booking failed");
+    public Booking addBooking(Theatre theatre, Show show, User user, int seats, SeatType seatType) {
+        if(users.stream().noneMatch(u -> u.getId().equals(user.getId()))){
+            System.out.println("User not found");
             return null;
         }
-        String id = "BK" + UUID.randomUUID().toString().substring(0,6);
-        Booking booking = new Booking(id, show, user, seats, seatType);
-        bookings.add(booking);
-        System.out.println("Booking created successfully");
-        return booking;
+        if(theatres.containsKey(theatre.getId())){
+            boolean reserved = theatres.get(theatre.getId()).bookTickets(show.getId(), seats, seatType);
+            if(!reserved) {
+                System.out.println("Booking failed");
+                return null;
+            }
+            String id = "BK" + UUID.randomUUID().toString().substring(0,6);
+            Booking booking = new Booking(id, show, user, seats, seatType, theatre);
+            bookings.add(booking);
+            System.out.println("Booking created successfully");
+            return booking;
+        } else {
+            System.out.println("Theatre not found");
+            return null;
+        }
     }
 
     public void cancelBookingByUser(String bookingId, String userId) {
-        Booking booking = bookings.stream()
+                  bookings.stream()
                                 .filter(b -> b.getId().equals(bookingId) && b.getUser().getId().equals(userId))
                                 .findFirst()
-                                .orElse(null);
-        if(booking == null) {
-            System.out.println("Booking not found");
-            return;
-        }
-        booking.cancelBooking(booking.getShow());
+                                .ifPresentOrElse(b -> b.cancelBooking(b.getShow()),
+                                                () -> System.out.println("Booking not found"));
     }
 
     public void displayTheatres() {
-        theatres.forEach(theatre -> {
+        theatres.values().forEach(theatre -> {
             System.out.println(theatre.getId() + " " + theatre.getName());
             theatre.displayShows();
         });
